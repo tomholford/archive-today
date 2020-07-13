@@ -1,6 +1,3 @@
-require 'faraday'
-require 'faraday_middleware'
-require 'nokogiri'
 require_relative 'version'
 
 module ArchiveToday
@@ -8,41 +5,69 @@ module ArchiveToday
     BASE_URL = 'https://archive.today/'.freeze
     DEFAULT_USER_AGENT = "archive_today #{ArchiveToday::VERSION}".freeze
 
-    attr_reader :debug, :url, :user_agent
+    attr_accessor :response
+    attr_reader :debug, :target_url, :user_agent
 
     def initialize(url:, user_agent: DEFAULT_USER_AGENT, debug: false)
       @debug = debug
-      @url = url
+      @target_url = url
       @user_agent = user_agent
     end
 
-    def submit
-      puts 'Submitting URL ...'
+    def capture
+      puts 'Submitting URL ...' if debug
       response = connection.post('/submit/') do |req|
         req.body = submission_body
       end
       raise unless response.success?
 
-      handle_response(response)
+      self.response = response
+
+      {
+        url: finalized_url,
+        screenshot_url: screenshot_url
+      }
     end
 
     private
 
-    def handle_response(response)
-      headers = response.headers
+    def finalized_url
+      archived_url.gsub('/wip', '')
+    end
 
-      return headers[:location] if headers.has_key?('location')
-      return headers[:refresh].split(';url=').last if headers.has_key?('refresh')
+    def archived_url
+      @archived_url ||= begin
+        headers = response.headers
 
-      # TODO: handle the history case mentioned here?
-      # https://github.com/pastpages/archiveis/blob/master/archiveis/api.py#L81
-      response.env.url
+        return headers[:location] if headers.has_key?('location')
+        return headers[:refresh].split(';url=').last if headers.has_key?('refresh')
+
+        # TODO: handle the history case mentioned here?
+        # https://github.com/pastpages/archiveis/blob/master/archiveis/api.py#L81
+        response.env.url
+      end
+    end
+
+    def screenshot_url
+      return nil unless archived_url
+      return nil if archived_url.include? '/wip/'
+
+      response = connection.get do |req|
+        req.url "#{archived_url}/image"
+      end
+      html = Nokogiri::HTML(response.body)
+      node = html.at_css('img[itemprop="contentUrl"]')
+      url = node.attr('src')
+      puts "Got screenshot URL: #{url}" if debug && url
+      return url if url
+
+      nil
     end
 
     def submission_body
       URI.encode_www_form(
         {
-          url: url,
+          url: target_url,
           anyway: 1,
           submitid: unique_submission_id
         }
@@ -50,14 +75,15 @@ module ArchiveToday
     end
 
     def unique_submission_id
-      puts 'Getting unique submission ID ...'
+      puts 'Getting unique submission ID ...' if debug
       response = connection.get('/')
       raise unless response.success?
 
       html = Nokogiri::HTML(response.body)
       node = html.at_css('input[name="submitid"]')
       id = node.attr('value')
-      puts "Got ID: #{id}" and return if id
+      puts "Got ID: #{id}" if debug && id
+      return id if id
 
       nil
     end

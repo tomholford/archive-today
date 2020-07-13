@@ -20,18 +20,51 @@ Or install it yourself as:
 
 ## Usage
 
+### Class Method
+
+`ArchiveToday#capture`
+
+Returns a Hash with keys `:url` and `:screenshot_url`. Note that if the page is in the process of being archived, the screenshot is not generated yet, so `nil` is returned for the screenshot URL.
+
+#### Args
+
+- `url` (required) - the target URL for archival
+- `debug` (optional) - when set to true, this will log HTTP requests and responses
+
 ```ruby
 require 'archive_today'
 
-ArchiveToday.submit(url: 'https://example.com')
+ArchiveToday.capture(url: 'https://example.com')
 
-# => 'https://archive.is/a1b2c3
+# => { url: 'https://archive.is/a1b2c3, screenshot_url: 'https://archive.is/[...].jpg' }
+```
+
+### Instance Method
+
+`ArchiveToday::Archiver`
+
+This class exposes the same `#capture` method, but you can also query the instance for the cached URLs once the capture response is received.
+
+#### Args
+
+- `url` (required) - the target URL for archival
+- `debug` (optional) - when set to true, this will log HTTP requests and responses
+
+
+```ruby
+require 'archive_today'
+
+a = ArchiveToday::Archiver.new(url: 'https://example.com')
+a.capture
+
+puts a.screenshot_url
+
+# => 'https://archive.is/[...].jpg
 ```
 
 ## Roadmap
 
 - proxies
-- optionally return URL of captured screenshot
 
 ## Development
 
