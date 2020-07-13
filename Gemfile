@@ -1,9 +1,12 @@
 source 'https://rubygems.org'
 
+group :development, :test do
+  gem 'amazing_print'
+  gem 'httplog'
+  gem 'irbtools'
+  gem 'pry'
+  gem 'rake'
+end
+
 # Specify your gem's dependencies in archive_today.gemspec
 gemspec
-
-gem 'faraday', '~> 1.0'
-gem 'faraday_middleware', '~> 1.0'
-gem 'nokogiri', '~> 1.10'
-gem 'rake', '~> 12.0'
