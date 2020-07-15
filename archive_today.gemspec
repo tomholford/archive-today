@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'faraday', '~> 1.0'
   spec.add_dependency 'faraday_middleware', '~> 1.0'
   spec.add_dependency 'nokogiri', '~> 1.10'
-  spec.add_dependency 'rake', '~> 12.0'
+  spec.add_dependency 'rake', '>= 12', '< 14'
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
