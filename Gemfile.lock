@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    archive_today (0.2.0)
+    archive_today (0.2.1)
       faraday (~> 1.0)
       faraday_middleware (~> 1.0)
       nokogiri (~> 1.10)
