@@ -27,6 +27,10 @@ module ArchiveToday
         url: finalized_url,
         screenshot_url: screenshot_url
       }
+    rescue Faraday::ClientError, Faraday::ServerError => e
+      puts "[archive_today] Error capturing URL: #{e.response[:status]} #{e.response[:body]}"
+
+      nil
     end
 
     private
@@ -62,6 +66,10 @@ module ArchiveToday
       return url if url
 
       nil
+    rescue Faraday::ClientError, Faraday::ServerError => e
+      puts "[archive_today] Error retrieving screenshot URL: #{e.response[:status]} #{e.response[:body]}"
+
+      nil
     end
 
     def submission_body
@@ -77,13 +85,16 @@ module ArchiveToday
     def unique_submission_id
       puts 'Getting unique submission ID ...' if debug
       response = connection.get('/')
-      raise unless response.success?
 
       html = Nokogiri::HTML(response.body)
       node = html.at_css('input[name="submitid"]')
       id = node.attr('value')
       puts "Got ID: #{id}" if debug && id
       return id if id
+
+      nil
+    rescue Faraday::ClientError, Faraday::ServerError => e
+      puts "[archive_today] Error retrieving submission ID: #{e.response[:status]} #{e.response[:body]}"
 
       nil
     end
@@ -93,6 +104,7 @@ module ArchiveToday
         Faraday.new(BASE_URL) do |faraday|
           faraday.headers = { 'User-Agent' => user_agent }
           faraday.use FaradayMiddleware::FollowRedirects
+          faraday.use Faraday::Response::RaiseError
           faraday.response :logger if debug
         end
       end
